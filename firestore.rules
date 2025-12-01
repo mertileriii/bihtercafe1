@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Menu items - Herkes okuyabilir, sadece admin yazabilir (Electron'dan)
+    match /menu_items/{itemId} {
+      allow read: if true;
+      allow write: if false; // Sadece Electron Admin SDK'dan yazılabilir
+    }
+    
+    // Orders - Herkes okuyabilir, herkes yeni sipariş oluşturabilir
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true; // Domain'den sipariş oluşturma izni
+      allow update: if false; // Sadece Electron Admin SDK'dan güncellenebilir
+      allow delete: if false;
+    }
+    
+    // Waiter calls - Herkes okuyabilir, herkes yeni garson çağrısı oluşturabilir
+    match /waiter_calls/{callId} {
+      allow read: if true;
+      allow create: if true; // Domain'den garson çağrısı oluşturma izni - BASİT
+      allow update: if false; // Sadece Electron Admin SDK'dan güncellenebilir
+      allow delete: if false;
+    }
+  }
+}
+

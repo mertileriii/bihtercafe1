@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bihter Kafe - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" 
+            onerror="console.warn('Chart.js yüklenemedi, grafikler gösterilmeyecek'); window.Chart = undefined;"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background-color: #2563eb; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background-color: #f1f5f9; }
+        
+        .table-card {
+            transition: all 0.3s ease;
+        }
+        .table-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .table-card.active {
+            border: 3px solid #dc2626;
+        }
+        .category-item {
+            transition: all 0.2s ease;
+        }
+        .category-item:hover {
+            background-color: #e0e7ff;
+        }
+        .category-item.active {
+            background-color: #2563eb;
+            color: white;
+        }
+        .payment-method-btn.selected {
+            border-color: #2563eb;
+            background-color: #dbeafe;
+        }
+        @keyframes pulse-once {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-once {
+            animation: pulse-once 2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Bihter Cafe-Lounge</h2>
+                <p class="text-gray-500">Admin Panel Girişi</p>
+            </div>
+            <form onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-600">Email</label>
+                    <input type="email" id="login-email" required 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500" 
+                           placeholder="admin@bihter.com" value="admin@bihter.com">
+                </div>
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-600">Şifre</label>
+                    <input type="password" id="login-password" required 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500" 
+                           placeholder="••••••••" value="admin123">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition">
+                    Giriş Yap
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Debug Info (visible in dev mode) -->
+    <div id="debug-info" class="fixed bottom-4 right-4 bg-black text-white text-xs p-2 rounded opacity-50 hidden">
+      <div>Electron: <span id="debug-electron">-</span></div>
+      <div>API: <span id="debug-api">-</span></div>
+    </div>
+
+    <!-- Main Admin Panel -->
+    <div id="main-panel" class="hidden min-h-screen">
+        <!-- Top Navigation Bar -->
+        <header class="bg-blue-600 text-white shadow-lg sticky top-0 z-40">
+            <div class="flex items-center justify-between px-6 py-3">
+                <div class="flex items-center gap-6">
+                    <h1 class="text-xl font-bold">4CodePin</h1>
+                    <nav class="flex items-center gap-4">
+                        <button onclick="switchMainTab('dashboard')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="dashboard">
+                            Ana Sayfa
+                        </button>
+                        <button onclick="switchMainTab('orders')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="orders">
+                            Sipariş
+                        </button>
+                        <button onclick="switchMainTab('tables')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="tables">
+                            Masa
+                        </button>
+                        <button onclick="switchMainTab('menu')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="menu">
+                            Menü
+                        </button>
+                        <button onclick="switchMainTab('order-history')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="order-history">
+                            Sipariş Kaydı
+                        </button>
+                        <button onclick="switchMainTab('notifications')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 relative" data-tab="notifications">
+                            Bildirimler
+                            <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                        </button>
+                        <button onclick="switchMainTab('reports')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="reports">
+                            Raporlar
+                        </button>
+                        <button onclick="switchMainTab('staff')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="staff">
+                            Çalışanlar
+                        </button>
+                        <button onclick="switchMainTab('settings')" class="nav-tab px-4 py-2 rounded-lg font-semibold hover:bg-blue-700" data-tab="settings">
+                            Ayarlar
+                        </button>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="admin-name" class="text-sm">Admin</span>
+                    <button onclick="handleLogout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold transition">
+                        Çıkış
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="p-6">
+            <!-- Content will be loaded here dynamically -->
+            <div class="text-center p-10 text-gray-500">Yükleniyor...</div>
+        </main>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <h2 id="product-modal-title" class="text-2xl font-bold text-gray-800 mb-6">Yeni Ürün Ekle</h2>
+        <form id="product-form" onsubmit="saveProduct(event)">
+          <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-600">Ürün Adı *</label>
+            <input type="text" id="product-name" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-600">Kategori *</label>
+            <select id="product-category" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white">
+              <option value="">Kategori Seçin</option>
+              <option value="sicak-kahveler">☕ Sıcak Kahveler</option>
+              <option value="soguk-kahveler">🧊 Soğuk Kahveler</option>
+              <option value="sicak-icecekler">🔥 Sıcak İçecekler</option>
+              <option value="soguk-icecekler">🧊 Soğuk İçecekler</option>
+              <option value="helvalar">🍯 Helvalar</option>
+              <option value="tatlilar">🍰 Tatlılar</option>
+              <option value="kahveler">☕ Kahveler</option>
+            </select>
+          </div>
+          
+          <!-- Normal Fiyat (Helvalar hariç) -->
+          <div id="normal-price-container" class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-600">Fiyat (₺) *</label>
+            <input type="number" id="product-price" step="0.01" min="0" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500">
+          </div>
+          
+          <!-- Helvalar için Büyük/Küçük Fiyat -->
+          <div id="helva-price-container" class="mb-4 hidden">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-2 text-sm font-medium text-gray-600">Küçük Fiyat (₺) *</label>
+                <input type="number" id="product-price-small" step="0.01" min="0" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block mb-2 text-sm font-medium text-gray-600">Büyük Fiyat (₺) *</label>
+                <input type="number" id="product-price-large" step="0.01" min="0" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-600">Açıklama</label>
+            <textarea id="product-description" rows="3" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+          </div>
+          
+          <div class="flex justify-end gap-3 mt-6">
+            <button type="button" onclick="closeProductModal()" class="px-5 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">İptal</button>
+            <button type="submit" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="order-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 id="order-modal-title" class="text-2xl font-bold text-gray-800">Masa Siparişi</h2>
+          <button onclick="closeOrderModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <div id="order-modal-content">
+          <!-- Order details will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="category-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="flex justify-between items-center mb-6">
+          <h2 id="category-modal-title" class="text-2xl font-bold text-gray-800">Yeni Kategori Ekle</h2>
+          <button onclick="closeCategoryModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <form id="category-form" onsubmit="saveCategory(event)">
+          <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-600">Kategori Adı *</label>
+            <input type="text" id="category-name" required 
+                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                   placeholder="Örn: Sıcak Kahveler">
+          </div>
+          <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-600">İkon (Emoji) *</label>
+            <input type="text" id="category-icon" required 
+                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 text-2xl text-center"
+                   placeholder="☕" maxlength="2">
+            <p class="text-xs text-gray-500 mt-1">Bir emoji girin (örn: ☕, 🧊, 🍰)</p>
+          </div>
+          <div class="flex justify-end gap-3 mt-6">
+            <button type="button" onclick="closeCategoryModal()" 
+                    class="px-5 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">
+              İptal
+            </button>
+            <button type="submit" 
+                    class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+              Kaydet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Payment Method Modal -->
+    <!-- Staff Modal -->
+    <div id="staff-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 id="staff-modal-title" class="text-2xl font-bold text-gray-800 mb-6">Yeni Çalışan Ekle</h2>
+            <form onsubmit="saveStaff(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ad Soyad</label>
+                    <input type="text" id="staff-name" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">E-posta</label>
+                    <input type="email" id="staff-email" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Şifre</label>
+                    <input type="password" id="staff-password" required minlength="6"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
+                    <select id="staff-role" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="staff">Çalışan</option>
+                        <option value="admin">Yönetici</option>
+                    </select>
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                        Kaydet
+                    </button>
+                    <button type="button" onclick="closeStaffModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                        İptal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-800">Ödeme Yöntemi Seçin</h2>
+          <button onclick="closePaymentModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <div class="mb-6">
+          <p class="text-gray-600 mb-4">Masa <span id="payment-table-number" class="font-bold"></span> için ödeme yöntemi seçin:</p>
+          <div class="space-y-3">
+            <button onclick="selectPaymentMethod('cash')" class="payment-method-btn w-full p-4 border-2 border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">💵</span>
+                <div>
+                  <div class="font-bold text-lg">Nakit</div>
+                  <div class="text-sm text-gray-500">Nakit ödeme</div>
+                </div>
+              </div>
+            </button>
+            <button onclick="selectPaymentMethod('card')" class="payment-method-btn w-full p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">💳</span>
+                <div>
+                  <div class="font-bold text-lg">Kart</div>
+                  <div class="text-sm text-gray-500">Kredi/Banka kartı</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button onclick="closePaymentModal()" class="px-5 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">İptal</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

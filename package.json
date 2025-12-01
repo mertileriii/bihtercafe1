@@ -1,0 +1,119 @@
+{
+  "name": "bihter-admin",
+  "version": "1.0.0",
+  "description": "Bihter Kafe - Electron Admin Panel",
+  "main": "electron/main.js",
+  "scripts": {
+    "postinstall": "electron-rebuild -f -w better-sqlite3 || true",
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:win:portable": "electron-builder --win portable",
+    "build:linux": "electron-builder --linux",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "keywords": [
+    "electron",
+    "admin",
+    "kafe",
+    "pos"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.4.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "firebase": "^12.6.0",
+    "firebase-admin": "^13.6.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "com.bihter.admin",
+    "productName": "Bihter Admin",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "admin/**/*",
+      "images/**/*",
+      "firebase-config.js",
+      "package.json",
+      "!node_modules/**/*",
+      "!dist/**/*",
+      "!*.md",
+      "!firebase-service-account.json",
+      "!firebase.json",
+      "!firestore.rules",
+      "!firestore.indexes.json",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/bcryptjs/**/*",
+      "node_modules/firebase-admin/**/*",
+      "node_modules/firebase/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "firebase-service-account.json",
+        "to": "firebase-service-account.json",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.business",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "publisherName": "Bihter Cafe",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Bihter Admin",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "menuCategory": false,
+      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "warningsAsErrors": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    },
+    "compression": "maximum",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/bcryptjs/**/*"
+    ]
+  }
+}

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bihter Kafe - Dijital Menü & Sipariş</title>
+    <!-- Tailwind CSS yüklemesi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind konfigürasyonu
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-cafe': '#4A2B1D', // Koyu Kahve
+                        'secondary-cream': '#F5E6CC', // Krem Rengi
+                        'accent-gold': '#D4AF37', // Hafif Altın
+                        'dark-brown': '#3A1E14', // Çok Koyu Kahve
+                        'menu-bg': '#EAD7BD', // Karşılama ekranı için kum rengi
+                        'landing-bg': '#E8D5B7', // Landing page arka plan rengi
+                        'landing-button-light': '#F5E6D3', // Menüye Git butonu rengi
+                        'landing-button-dark': '#E8D5B7', // Garson Çağır butonu rengi
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Kaydırma çubuğunu güzelleştirme */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background-color: #D4AF37; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background-color: #F5E6CC; }
+
+        /* Sipariş butonunun sticky olması için body padding'i - Menü aktifken eklenecek */
+        .menu-padding-bottom {
+            padding-bottom: 120px; 
+        }
+        
+        /* Modal geçiş animasyonu */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+        }
+        .opacity-100 .modal-content {
+            transform: translateY(0);
+        }
+        
+        /* Welcome Container - Varsayılan olarak görünür */
+        #welcome-container {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Menu Container - Varsayılan olarak gizli */
+        #menu-view-container {
+            display: none !important;
+        }
+        
+        /* Order Footer - Varsayılan olarak gizli */
+        #order-footer {
+            display: none !important;
+        }
+        
+        /* Header - Varsayılan olarak gizli */
+        header {
+            display: none !important;
+        }
+        
+        /* Bihter Logo - Script Font */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&display=swap');
+        .bihter-logo {
+            font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
+            font-size: 36px;
+            font-weight: 500;
+            font-style: italic;
+            color: black;
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+        
+        /* Landing Page Animasyonu */
+        #welcome-container {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    
+    <!-- Kritik JavaScript hatalarını yakalamak ve ekranda göstermek için Global Hata Yakalayıcı -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorEl = document.getElementById('error-message');
+            if (errorEl) {
+                let displayMessage = "BEKLENMEDİK HATA: Bir JavaScript hatası oluştu ve uygulama durdu.";
+                if (message) {
+                    displayMessage += " Detay: " + message;
+                }
+                if (lineno) {
+                    displayMessage += " (Satır: " + lineno + ")";
+                }
+                errorEl.textContent = displayMessage;
+                errorEl.classList.remove('hidden');
+                // Uygulamanın diğer bölümlerini gizle
+                document.getElementById('loading-indicator')?.classList.add('hidden');
+                document.getElementById('welcome-container')?.classList.add('hidden');
+                document.getElementById('menu-view-container')?.classList.add('hidden');
+                document.getElementById('admin-container')?.classList.add('hidden');
+                document.getElementById('order-footer')?.classList.add('hidden');
+            }
+            return false;
+        };
+    </script>
+    
+    <!-- Buton fonksiyonlarını hemen tanımla (app.js yüklenmeden önce) - HEAD'DE -->
+    <script>
+        // HATA YAKALAMA - Sayfa yüklenmesini engelleyen hataları yakala
+        try {
+            // ÖNCE: Promise mekanizmasını hemen kur (app.js yüklenmeden önce)
+            window._appFunctionsLoaded = false;
+            window._appFunctionsReady = new Promise((resolve) => {
+                window._resolveAppFunctions = resolve;
+            });
+            console.log('🔧 Inline script yükleniyor, Promise mekanizması kuruldu...');
+        } catch (error) {
+            console.error('❌ Inline script başlangıç hatası:', error);
+            alert('Sayfa yüklenirken hata oluştu: ' + error.message);
+        }
+        
+        // Global fonksiyonlar - butonlar için (HEMEN TANIMLA)
+        try {
+        window.navigateToMenu = function() {
+            console.log('📖 navigateToMenu çağrıldı!');
+            try {
+                // Masa numarasını URL'den al
+                const urlParams = new URLSearchParams(window.location.search);
+                const tableId = urlParams.get('table') || '13';
+                
+                // Menü sayfasına yönlendir
+                console.log(`📖 Menü sayfasına yönlendiriliyor (Masa: ${tableId})...`);
+                window.location.href = `menu.html?table=${tableId}`;
+            } catch (error) {
+                console.error('❌ navigateToMenu hatası:', error);
+                alert('Menü sayfasına yönlendirilemedi: ' + error.message);
+            }
+        };
+        
+        // Garson çağır butonu için EN BASIT handler
+        function callWaiterDirect() {
+            console.log('🔔 callWaiterDirect çağrıldı!');
+            console.log('📊 window.appFunctions:', window.appFunctions);
+            console.log('📊 typeof window.appFunctions?.callWaiter:', typeof window.appFunctions?.callWaiter);
+            
+            // Önce window.appFunctions'ı kontrol et
+            if (window.appFunctions && typeof window.appFunctions.callWaiter === 'function') {
+                console.log('✅ window.appFunctions.callWaiter mevcut, çağrılıyor...');
+                try {
+                    window.appFunctions.callWaiter();
+                } catch (error) {
+                    console.error('❌ callWaiter çağrılırken hata:', error);
+                    alert('Garson çağrılırken hata oluştu: ' + error.message);
+                }
+                return;
+            }
+            
+            // Eğer henüz yüklenmemişse, bekle
+            console.log('⏳ window.appFunctions.callWaiter bekleniyor...');
+            let attempts = 0;
+            const maxAttempts = 30;
+            const tryCallWaiter = () => {
+                attempts++;
+                console.log(`🔄 Deneme ${attempts}/${maxAttempts}...`);
+                if (window.appFunctions && typeof window.appFunctions.callWaiter === 'function') {
+                    console.log(`✅ window.appFunctions.callWaiter bulundu (deneme ${attempts}), çağrılıyor...`);
+                    try {
+                        window.appFunctions.callWaiter();
+                    } catch (error) {
+                        console.error('❌ callWaiter çağrılırken hata:', error);
+                        alert('Garson çağrılırken hata oluştu: ' + error.message);
+                    }
+                } else if (attempts < maxAttempts) {
+                    setTimeout(tryCallWaiter, 200);
+                } else {
+                    console.error('❌ window.appFunctions.callWaiter yüklenemedi!');
+                    console.error('   window.appFunctions:', window.appFunctions);
+                    alert('Garson çağrılamadı. Lütfen sayfayı yenileyip tekrar deneyin.');
+                }
+            };
+            tryCallWaiter();
+        }
+        
+        // Global scope'a HEMEN ekle
+        window.callWaiterDirect = callWaiterDirect;
+        window.handleCallWaiterClick = callWaiterDirect;
+        window.callWaiter = callWaiterDirect;
+        console.log('✅ callWaiterDirect global scope\'a eklendi');
+        
+        console.log('✅ Inline script: Global fonksiyonlar tanımlandı');
+        
+        // Butonlara event listener ekle (DOM hazır olduğunda)
+        function attachButtonListeners() {
+            const navigateButton = document.getElementById('navigate-to-menu-button');
+            const callWaiterButton = document.getElementById('call-waiter-button');
+            
+            if (navigateButton && typeof window.navigateToMenu === 'function') {
+                navigateButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔴 Menüye Git butonu tıklandı (programmatic listener)!');
+                    window.navigateToMenu();
+                }, true);
+                console.log('✅ Menüye Git butonu listener eklendi');
+            }
+            
+            if (callWaiterButton && typeof window.callWaiter === 'function') {
+                callWaiterButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔴 Garson Çağır butonu tıklandı (programmatic listener)!');
+                    window.callWaiter();
+                }, true);
+                console.log('✅ Garson Çağır butonu listener eklendi');
+            }
+        }
+        
+        // DOM hazır olduğunda listener'ları ekle
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachButtonListeners);
+        } else {
+            // DOM zaten hazır
+            attachButtonListeners();
+        }
+        
+        // Ekstra güvenlik - kısa bir gecikmeyle de dene
+        setTimeout(attachButtonListeners, 100);
+        setTimeout(attachButtonListeners, 500);
+        } catch (error) {
+            console.error('❌ Inline script hatası:', error);
+            alert('Sayfa yüklenirken hata oluştu: ' + error.message);
+        }
+    </script>
+</head>
+<body class="font-sans antialiased min-h-screen overflow-x-hidden" style="background-color: #E8D5B7; overflow: hidden; margin: 0; padding: 0;">
+
+    <!-- MÜŞTERİ: KARŞILAMA EKRANI (Landing Page) - EN ÜSTTE -->
+    <div id="welcome-container" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background-color: #E8D5B7; display: flex !important; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; z-index: 9999; visibility: visible !important; opacity: 1 !important;">
+            <!-- Dil Seçimi (Üst Sol) -->
+            <div class="absolute top-4 left-4">
+                <button id="language-selector" class="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition">
+                    <span class="text-xl">🇹🇷</span>
+                    <span class="font-semibold">TR</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                </button>
+            </div>
+            
+            <!-- Logo ve İçerik (Ortalanmış) -->
+            <div class="flex flex-col items-center justify-center flex-1 w-full">
+                <!-- Beyaz Daire İçinde Logo -->
+                <div class="w-48 h-48 md:w-56 md:h-56 rounded-full bg-white shadow-2xl mb-8 flex items-center justify-center relative overflow-hidden">
+                    <img src="./Group.svg" alt="Bihter Cafe Logo" class="w-full h-full object-contain p-4" style="max-width: 100%; max-height: 100%;">
+                </div>
+                
+                <!-- Başlık -->
+                <h1 class="text-2xl md:text-3xl font-bold text-black mb-2 uppercase tracking-wide">BİHTER COFFE - LOUNGE</h1>
+                
+                <!-- Hoşgeldiniz Metni -->
+                <p class="text-lg md:text-xl text-black mb-12">Hoşgeldiniz</p>
+                
+                <!-- Butonlar -->
+                <div class="w-full max-w-xs space-y-4">
+                    <!-- Menüye Git Butonu -->
+                    <a id="navigate-to-menu-button" 
+                       href="javascript:void(0);" 
+                       onclick="(function(){const t=new URLSearchParams(window.location.search).get('table')||'13';console.log('📖 Yönlendirme başlatılıyor - Masa:',t);window.location.href='menu.html?table='+t;return false;})();"
+                       class="w-full py-4 rounded-xl text-gray-800 font-semibold text-base md:text-lg shadow-lg hover:shadow-xl transition transform hover:scale-[1.02] block text-center"
+                       style="background-color: #F5E6D3; cursor: pointer; pointer-events: auto !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; position: relative; z-index: 10; text-decoration: none;">
+                Menüye Git
+            </a>
+            
+                    <!-- Garson Çağır Butonu -->
+                    <button id="call-waiter-button" 
+                            onclick="(function(){console.log('🔔 Buton onclick tetiklendi!'); if(typeof callWaiterDirect==='function'){callWaiterDirect();}else if(typeof window.callWaiterDirect==='function'){window.callWaiterDirect();}else{alert('Sayfa yükleniyor, lütfen bekleyin...');} return false;})();"
+                            class="w-full py-4 rounded-xl text-gray-800 font-semibold text-base md:text-lg shadow-lg hover:shadow-xl transition transform hover:scale-[1.02] border-2 border-white"
+                            style="background-color: #E8D5B7; cursor: pointer; pointer-events: auto !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; position: relative; z-index: 10;">
+                Garson Çağır
+            </button>
+                </div>
+            </div>
+            
+            <!-- Powered by (Alt) -->
+            <div class="absolute bottom-6 text-center">
+                <p class="text-sm text-gray-700">
+                    Powered by <span class="font-bold text-gray-900">4code</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- MÜŞTERİ: MENÜ GÖRÜNÜMÜ -->
+        <div id="menu-view-container" class="w-full max-w-4xl p-4 sm:p-6 bg-secondary-cream rounded-2xl shadow-2xl border-2 border-accent-gold/50 hidden" style="display: none !important;">
+            <div class="flex justify-between items-center mb-6 p-3 bg-dark-brown text-white rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold">Masa Numarası:</h2>
+                <span id="table-id-display" class="text-accent-gold text-4xl font-extrabold"></span>
+            </div>
+            
+            <!-- Menü Başlığı ve Geri Butonu Buraya Eklendi -->
+            <div id="menu-header" class="mb-6">
+                <!-- JS tarafından doldurulacak -->
+            </div>
+            
+            <!-- Simülasyon Mesajı -->
+            <div id="simulation-message" class="hidden text-center text-sm font-semibold p-3 rounded-xl border-2 mb-4 transition duration-300"></div>
+
+            <!-- Menü Listesi -->
+            <div id="menu-container" class="pb-2">
+                <!-- Menü Öğeleri/Kategoriler Buraya JS Tarafından Yüklenecek -->
+            </div>
+        </div>
+        
+        <!-- Başarı/Hata Mesajı Modalı (Alert yerine) -->
+        <div id="message-box" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white px-8 py-5 rounded-2xl shadow-2xl z-50 transition-all duration-500 opacity-0 hidden text-center font-semibold text-lg">
+            <!-- Mesaj içeriği JS tarafından doldurulacak -->
+        </div>
+
+        <!-- YÖNETİCİ GÖRÜNÜMÜ -->
+        <div id="admin-container" class="w-full max-w-6xl p-6 bg-white rounded-2xl shadow-2xl hidden">
+            <h2 class="text-4xl font-extrabold text-primary-cafe text-center mb-8 border-b-4 border-accent-gold pb-2">Yönetim Paneli - Gerçek Zamanlı Siparişler</h2>
+            
+            <!-- Sipariş Listesi -->
+            <div id="admin-order-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Sipariş Kartları Buraya JS Tarafından Yüklenecek -->
+            </div>
+
+            <p class="text-center text-sm text-gray-400 mt-10">Kullanıcı ID (Anonim/Rastgele): <span id="admin-user-id" class="font-mono text-xs"></span></p>
+
+            <div class="text-center mt-6 p-4 border-t">
+                <p class="text-sm text-gray-600">
+                    <span class="font-bold text-red-500">DİKKAT:</span> Bu uygulama Supabase'deki **`products`** ve **`orders`** tablolarını kullanır.
+                </p>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- SEPET MODALI -->
+    <div id="cart-modal" class="modal-overlay fixed inset-0 z-40 hidden opacity-0 flex items-end justify-center">
+        <!-- Modal İçeriği - Alttan yukarı kayacak şekilde tasarlandı -->
+        <div class="modal-content w-full max-w-4xl bg-white rounded-t-3xl shadow-2xl p-6 relative">
+            
+            <!-- Kapatma Butonu ve Başlık -->
+            <div class="flex justify-between items-center mb-6 pb-3 border-b-2 border-secondary-cream">
+                <h3 class="text-3xl font-extrabold text-dark-brown">Sepetim</h3>
+                <button onclick="window.appFunctions.closeCartModal()" 
+                        class="text-gray-500 hover:text-dark-brown p-2 rounded-full transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <!-- Sepet Ürün Listesi -->
+            <div id="cart-items-container" class="max-h-96 overflow-y-auto mb-6 pr-2">
+                <!-- Ürünler JS tarafından render edilecek -->
+            </div>
+
+            <!-- Toplam ve Sipariş Butonu -->
+            <div class="border-t-2 border-primary-cafe/20 pt-4 flex justify-between items-center">
+                <p class="text-2xl font-semibold text-primary-cafe">Toplam Tutar:</p>
+                <p id="cart-total" class="text-4xl font-extrabold text-accent-gold">0.00 ₺</p>
+            </div>
+
+            <button id="modal-place-order-button" onclick="console.log('🔴 Modal butona tıklandı!'); try { window.appFunctions.placeOrder(); } catch(e) { console.error('❌ Modal buton hatası:', e); alert('Hata: ' + e.message); }" 
+                    class="w-full mt-4 flex items-center justify-center bg-accent-gold text-primary-cafe font-bold py-4 rounded-xl shadow-xl hover:bg-yellow-400 transition transform hover:scale-[1.01]"
+                    disabled>
+                Siparişi Onayla ve Gönder
+            </button>
+        </div>
+    </div>
+
+    <!-- Sipariş Kutusu (Footer - Sabit) - Sadece MENÜ aktifken gösterilir -->
+    <div id="order-footer" class="fixed bottom-0 left-0 right-0 p-4 bg-dark-brown shadow-[0_-5px_15px_rgba(0,0,0,0.2)] hidden" style="display: none !important;">
+        <div class="w-full max-w-4xl mx-auto flex justify-between items-center text-white">
+            
+            <!-- Sepet Özeti -->
+            <div id="order-summary" class="font-semibold text-white flex flex-col">
+                <span class="text-sm font-normal opacity-75">Sepetiniz boş. Menüden ekleyin!</span>
+            </div>
+            
+            <div class="flex space-x-3">
+                <!-- Sepete Git Butonu (Yeni Eklendi) -->
+                <button id="cart-count-button" onclick="window.appFunctions.openCartModal()" 
+                        class="relative flex items-center justify-center bg-secondary-cream text-primary-cafe font-bold py-3 px-5 rounded-xl shadow-xl hover:bg-white transition"
+                        disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Sepete Git
+                    <!-- Ürün Sayısı Rozeti -->
+                    <span id="cart-badge" class="hidden absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">0</span>
+                </button>
+                
+                <!-- Siparişi Onayla ve Gönder Butonu (Footer) -->
+                <button id="place-order-button" onclick="console.log('🔴 Butona tıklandı!'); try { window.appFunctions.placeOrder(); } catch(e) { console.error('❌ Buton hatası:', e); alert('Hata: ' + e.message); }" 
+                        class="flex items-center justify-center bg-accent-gold text-primary-cafe font-bold py-3 px-6 rounded-xl shadow-xl hover:bg-yellow-400 transition transform hover:scale-[1.02]"
+                        disabled>
+                    Siparişi Onayla ve Gönder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Garson Çağır Onay Popup -->
+    <div id="waiter-call-confirm-popup" class="fixed inset-0 bg-black bg-opacity-50 z-[99999] hidden items-center justify-center transition-opacity duration-300 opacity-0 p-4" style="z-index: 999999 !important;">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transform transition-all duration-300 scale-95 opacity-0">
+            <!-- İkon -->
+            <div class="mx-auto mb-6 w-20 h-20 bg-accent-gold rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-primary-cafe" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            
+            <!-- Soru -->
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+                Garson çağırmak istiyor musunuz?
+            </h3>
+            
+            <!-- Masa Numarası -->
+            <p class="text-gray-600 mb-8 text-sm sm:text-base">
+                Masa <span id="waiter-confirm-table-number" class="font-bold text-primary-cafe"></span> için garson çağrılacak.
+            </p>
+            
+            <!-- Butonlar -->
+            <div class="flex gap-3">
+                <button onclick="closeWaiterConfirmPopup()" 
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                    İptal
+                </button>
+                <button onclick="confirmWaiterCall()" 
+                        class="flex-1 bg-accent-gold hover:bg-yellow-400 text-primary-cafe font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                    Evet, Çağır
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Garson Çağır Başarı Popup -->
+    <div id="waiter-call-popup" class="fixed inset-0 bg-black bg-opacity-50 z-[99999] hidden items-center justify-center transition-opacity duration-300 opacity-0 p-4" style="z-index: 999999 !important;">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transform transition-all duration-300 scale-95 opacity-0">
+            <!-- Garson Sahnesi İllüstrasyonu -->
+            <div class="mb-6 flex justify-center items-center">
+                <svg width="220" height="160" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Zemin -->
+                    <rect x="0" y="130" width="220" height="30" fill="#E5E0D6"/>
+                    
+                    <!-- Masa (daha büyük) -->
+                    <rect x="70" y="100" width="80" height="10" fill="#8B4513" rx="2"/>
+                    <!-- Masa bacakları -->
+                    <rect x="78" y="110" width="6" height="20" fill="#654321"/>
+                    <rect x="130" y="110" width="6" height="20" fill="#654321"/>
+                    
+                    <!-- Sol Sandalye -->
+                    <rect x="45" y="105" width="22" height="25" fill="#8B4513" rx="2"/>
+                    <rect x="48" y="108" width="16" height="18" fill="#9E9E9E" rx="1"/>
+                    
+                    <!-- Sağ Sandalye -->
+                    <rect x="153" y="105" width="22" height="25" fill="#8B4513" rx="2"/>
+                    <rect x="156" y="108" width="16" height="18" fill="#9E9E9E" rx="1"/>
+                    
+                    <!-- Garson (sağdan geliyor) -->
+                    <!-- Kafa -->
+                    <circle cx="185" cy="55" r="9" fill="#FFDBAC"/>
+                    <!-- Saç -->
+                    <path d="M 180 50 Q 185 45 190 50" stroke="#3E2723" stroke-width="2" fill="none"/>
+                    
+                    <!-- Gövde (Beyaz gömlek) -->
+                    <rect x="177" y="64" width="16" height="22" fill="#FFFFFF" rx="1"/>
+                    <!-- Siyah yelek -->
+                    <rect x="178" y="66" width="14" height="10" fill="#000000" rx="1"/>
+                    <!-- Siyah pantolon -->
+                    <rect x="179" y="76" width="12" height="14" fill="#000000"/>
+                    
+                    <!-- Kollar -->
+                    <rect x="173" y="68" width="4" height="12" fill="#FFFFFF"/>
+                    <rect x="193" y="68" width="4" height="12" fill="#FFFFFF"/>
+                    
+                    <!-- Bacaklar -->
+                    <line x1="185" y1="90" x2="185" y2="105" stroke="#000000" stroke-width="3"/>
+                    <line x1="185" y1="105" x2="180" y2="115" stroke="#000000" stroke-width="3"/>
+                    <line x1="185" y1="105" x2="190" y2="115" stroke="#000000" stroke-width="3"/>
+                    
+                    <!-- Tepsi -->
+                    <ellipse cx="195" cy="70" rx="8" ry="2" fill="#D4AF37"/>
+                    <circle cx="195" cy="70" r="6" fill="#FFFFFF"/>
+                    
+                    <!-- Garson eli (tepsiyi tutuyor) -->
+                    <circle cx="193" cy="72" r="2" fill="#FFDBAC"/>
+                </svg>
+            </div>
+            
+            <!-- Başlık -->
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+                Garson Çağrıldı!
+            </h3>
+            
+            <!-- Mesaj -->
+            <p class="text-gray-600 mb-6 text-sm sm:text-base">
+                Masa <span id="waiter-popup-table-number" class="font-bold text-primary-cafe"></span> için garson çağrıldı. En kısa sürede geleceğiz.
+            </p>
+            
+            <!-- Kapat Butonu -->
+            <button onclick="closeWaiterCallPopup()" 
+                    class="w-full bg-accent-gold hover:bg-yellow-400 text-primary-cafe font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                Tamam
+            </button>
+        </div>
+    </div>
+
+    <!-- App.js Modül - Menü yükleme için -->
+    <script type="module" src="./app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /menu_items/{itemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true;  // Domain'den sipariş oluşturma izni
+      allow update: if false; // Sadece Electron'dan güncellenebilir
+      allow delete: if false; // Sadece Electron'dan silinebilir
+    }
+  }
+}
+
+

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bihter Kafe - Menü</title>
+    <!-- Tailwind CSS yüklemesi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind konfigürasyonu
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-cafe': '#4A2B1D',
+                        'secondary-cream': '#F5E6CC',
+                        'accent-gold': '#D4AF37',
+                        'dark-brown': '#3A1E14',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background-color: #D4AF37; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background-color: #F5E6CC; }
+        
+        .menu-padding-bottom {
+            padding-bottom: 120px; 
+        }
+        
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+        }
+        .opacity-100 .modal-content {
+            transform: translateY(0);
+        }
+        
+        /* Mobil için dokunma optimizasyonu */
+        @media (max-width: 640px) {
+            .menu-padding-bottom {
+                padding-bottom: 140px; 
+            }
+            
+            /* Butonlar için minimum dokunma alanı */
+            button, .cursor-pointer {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Scroll performansı */
+            * {
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+            }
+        }
+        
+        /* Responsive görseller */
+        img, svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* Body için padding - mobil footer için */
+        @media (max-width: 639px) {
+            body {
+                padding-bottom: 110px;
+            }
+        }
+        
+        /* Viewport için iOS optimizasyonu */
+        @supports (-webkit-touch-callout: none) {
+            html {
+                min-height: -webkit-fill-available;
+            }
+            body {
+                min-height: -webkit-fill-available;
+            }
+        }
+        
+        /* Viewport için iOS optimizasyonu */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                min-height: -webkit-fill-available;
+            }
+        }
+        
+        /* Kategori kartları için özel stiller - BEYAZ YAZI VE DÜŞÜK OPACITY - ÇOK GÜÇLÜ */
+        .category-card-with-image h3,
+        .category-card-with-image .category-card-title,
+        .category-card-title,
+        div.category-card-with-image h3.category-card-title,
+        div[class*="category-card-with-image"] h3,
+        .category-card-with-image h3[style*="color"],
+        h3.category-card-title[style*="color"] {
+            color: #ffffff !important;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.7) !important;
+            font-weight: 700 !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        
+        .category-card-overlay,
+        div.category-card-overlay {
+            background-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        /* Tailwind override - çok spesifik selector - TÜM OLASILIKLAR */
+        .category-card-with-image h3.text-primary-cafe,
+        .category-card-with-image .text-primary-cafe,
+        .category-card-with-image h3[class*="text-"],
+        h3.category-card-title[class*="text-"] {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        
+        /* En güçlü override - inline style'dan sonra bile çalışsın */
+        .category-card-with-image h3 {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen" style="background-color: #E8D5B7; margin: 0; padding: 0;">
+
+    <!-- Header -->
+    <header class="bg-dark-brown text-white p-3 sm:p-4 shadow-lg sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg sm:text-xl md:text-2xl font-bold">Bihter Cafe & Lounge</h1>
+        </div>
+    </header>
+
+    <!-- Ana Container -->
+    <div class="w-full max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
+        
+        <!-- Menü Başlığı -->
+        <div id="menu-header" class="mb-6">
+            <!-- JS tarafından doldurulacak -->
+        </div>
+        
+        <!-- Simülasyon Mesajı -->
+        <div id="simulation-message" class="hidden text-center text-sm font-semibold p-3 rounded-xl border-2 mb-4 transition duration-300"></div>
+
+        <!-- Menü Listesi -->
+        <div id="menu-container" class="pb-2">
+            <!-- Menü Öğeleri/Kategoriler Buraya JS Tarafından Yüklenecek -->
+            <div class="text-center text-gray-400 py-10">
+                <p>Menü yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sepet Modal -->
+    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden modal-overlay flex items-end justify-center">
+        <div class="bg-white rounded-t-3xl w-full max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto modal-content p-4 sm:p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4 sm:mb-6">
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-primary-cafe">Sepetim</h2>
+                <button onclick="window.appFunctions.closeCartModal()" 
+                        class="text-gray-500 hover:text-dark-brown p-2 rounded-full transition min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <!-- Sepet Ürün Listesi -->
+            <div id="cart-items-container" class="max-h-[40vh] sm:max-h-96 overflow-y-auto mb-4 sm:mb-6 pr-2">
+                <!-- Ürünler JS tarafından render edilecek -->
+            </div>
+
+            <!-- Toplam ve Sipariş Butonu -->
+            <div class="border-t-2 border-primary-cafe/20 pt-3 sm:pt-4 flex justify-between items-center">
+                <p class="text-lg sm:text-2xl font-semibold text-primary-cafe">Toplam Tutar:</p>
+                <p id="cart-total" class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-accent-gold">0.00 ₺</p>
+            </div>
+
+            <button id="modal-place-order-button" onclick="window.appFunctions.placeOrder()" 
+                    class="w-full mt-3 sm:mt-4 flex items-center justify-center bg-accent-gold text-primary-cafe font-bold py-3 sm:py-4 rounded-xl shadow-xl hover:bg-yellow-400 transition transform hover:scale-[1.01] min-h-[48px] text-sm sm:text-base"
+                    disabled>
+                Siparişi Onayla ve Gönder
+            </button>
+        </div>
+    </div>
+
+    <!-- Sipariş Kutusu (Footer - Sabit) -->
+    <div id="order-footer" class="fixed bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4 bg-dark-brown shadow-[0_-5px_15px_rgba(0,0,0,0.2)] z-30">
+        <div class="w-full max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-3 text-white">
+            
+            <!-- Sepet Özeti -->
+            <div id="order-summary" class="font-semibold text-white flex flex-col text-xs sm:text-sm">
+                <span class="font-normal opacity-75">Sepetiniz boş. Menüden ekleyin!</span>
+            </div>
+            
+            <div class="flex gap-2 sm:space-x-3">
+                <!-- Sepete Git Butonu -->
+                <button id="cart-count-button" onclick="window.appFunctions.openCartModal()" 
+                        class="relative flex items-center justify-center bg-accent-gold text-primary-cafe font-bold py-2.5 sm:py-3 px-4 sm:px-6 md:px-8 rounded-lg sm:rounded-xl shadow-xl hover:bg-yellow-400 transition min-h-[44px] text-xs sm:text-sm md:text-base flex-1"
+                        disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    <span>Sepete Git</span>
+                    <span id="cart-badge" class="hidden absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg">0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zarif Toast Bildirimi -->
+    <div id="toast-notification" class="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 transition-all duration-300 transform translate-x-full opacity-0">
+        <div class="bg-white rounded-lg shadow-2xl border-l-4 flex items-center gap-3 px-3 sm:px-4 py-3 w-full sm:min-w-[280px] sm:max-w-[400px]">
+            <div id="toast-icon" class="text-2xl flex-shrink-0"></div>
+            <div class="flex-1">
+                <p id="toast-message" class="text-sm font-medium text-gray-800"></p>
+            </div>
+            <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Sipariş Başarı Popup -->
+    <div id="order-success-popup" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center transition-opacity duration-300 opacity-0 p-4">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transform transition-all duration-300 scale-95 opacity-0">
+            <!-- Checkmark İkonu -->
+            <div class="mx-auto mb-6 w-20 h-20 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            
+            <!-- Masa Numarası -->
+            <h3 id="order-success-table" class="text-2xl font-bold text-gray-800 mb-4">
+                Masa <span id="order-success-table-number"></span>
+            </h3>
+            
+            <!-- Mesaj -->
+            <p class="text-gray-700 mb-8 leading-relaxed">
+                Siparişinizi aldık.<br>
+                En kısa sürede<br>
+                teslim edeceğiz.
+            </p>
+            
+            <!-- Tamam Butonu -->
+            <button onclick="closeOrderSuccessPopup()" 
+                    class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                Tamam
+            </button>
+        </div>
+    </div>
+    
+    <!-- Garson Çağır Onay Popup -->
+    <div id="waiter-call-confirm-popup" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center transition-opacity duration-300 opacity-0 p-4">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transform transition-all duration-300 scale-95 opacity-0">
+            <!-- İkon -->
+            <div class="mx-auto mb-6 w-20 h-20 bg-accent-gold rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-primary-cafe" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            
+            <!-- Soru -->
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+                Garson çağırmak istiyor musunuz?
+            </h3>
+            
+            <!-- Masa Numarası -->
+            <p class="text-gray-600 mb-8 text-sm sm:text-base">
+                Masa <span id="waiter-confirm-table-number" class="font-bold text-primary-cafe"></span> için garson çağrılacak.
+            </p>
+            
+            <!-- Butonlar -->
+            <div class="flex gap-3">
+                <button onclick="closeWaiterConfirmPopup()" 
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                    İptal
+                </button>
+                <button onclick="confirmWaiterCall()" 
+                        class="flex-1 bg-accent-gold hover:bg-yellow-400 text-primary-cafe font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                    Evet, Çağır
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Garson Çağır Başarı Popup -->
+    <div id="waiter-call-popup" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center transition-opacity duration-300 opacity-0 p-4">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transform transition-all duration-300 scale-95 opacity-0">
+            <!-- Garson Sahnesi İllüstrasyonu -->
+            <div class="mb-6 flex justify-center items-center">
+                <svg width="220" height="160" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Zemin -->
+                    <rect x="0" y="130" width="220" height="30" fill="#E5E0D6"/>
+                    
+                    <!-- Masa (daha büyük) -->
+                    <rect x="70" y="100" width="80" height="10" fill="#8B4513" rx="2"/>
+                    <!-- Masa bacakları -->
+                    <rect x="78" y="110" width="6" height="20" fill="#654321"/>
+                    <rect x="130" y="110" width="6" height="20" fill="#654321"/>
+                    
+                    <!-- Sol Sandalye -->
+                    <rect x="45" y="105" width="22" height="25" fill="#8B4513" rx="2"/>
+                    <rect x="48" y="108" width="16" height="18" fill="#9E9E9E" rx="1"/>
+                    
+                    <!-- Sağ Sandalye -->
+                    <rect x="153" y="105" width="22" height="25" fill="#8B4513" rx="2"/>
+                    <rect x="156" y="108" width="16" height="18" fill="#9E9E9E" rx="1"/>
+                    
+                    <!-- Garson (sağdan geliyor) -->
+                    <!-- Kafa -->
+                    <circle cx="185" cy="55" r="9" fill="#FFDBAC"/>
+                    <!-- Saç -->
+                    <path d="M 180 50 Q 185 45 190 50" stroke="#3E2723" stroke-width="2" fill="none"/>
+                    
+                    <!-- Gövde (Beyaz gömlek) -->
+                    <rect x="177" y="64" width="16" height="22" fill="#FFFFFF" rx="1"/>
+                    <!-- Siyah yelek -->
+                    <rect x="178" y="66" width="14" height="10" fill="#000000" rx="1"/>
+                    <!-- Siyah pantolon -->
+                    <rect x="179" y="76" width="12" height="14" fill="#000000"/>
+                    
+                    <!-- Kollar -->
+                    <rect x="173" y="68" width="4" height="12" fill="#FFFFFF"/>
+                    <rect x="193" y="68" width="4" height="12" fill="#FFFFFF"/>
+                    
+                    <!-- Bacaklar -->
+                    <line x1="185" y1="90" x2="185" y2="105" stroke="#000000" stroke-width="3"/>
+                    <line x1="185" y1="105" x2="180" y2="115" stroke="#000000" stroke-width="3"/>
+                    <line x1="185" y1="105" x2="190" y2="115" stroke="#000000" stroke-width="3"/>
+                    
+                    <!-- Tepsi -->
+                    <ellipse cx="175" cy="100" rx="9" ry="2.5" fill="#C0C0C0"/>
+                    <ellipse cx="175" cy="97" rx="7" ry="1.5" fill="#E8E8E8"/>
+                    
+                    <!-- Cloche (Yemek Kapağı) tepsi üzerinde -->
+                    <ellipse cx="175" cy="97" rx="6" ry="3" fill="#D3D3D3"/>
+                    <path d="M 175 94 Q 173 90 175 88 Q 177 90 175 94" fill="#C0C0C0"/>
+                    <circle cx="175" cy="88" r="1.5" fill="#808080"/>
+                </svg>
+            </div>
+            
+            <!-- Masa Numarası -->
+            <h3 id="waiter-call-table" class="text-2xl font-bold text-gray-800 mb-4">
+                Masa - <span id="waiter-call-table-number"></span>
+            </h3>
+            
+            <!-- Mesaj -->
+            <p class="text-gray-700 mb-2 leading-relaxed font-semibold">
+                Garson birazdan sizinle ilgilenecek.
+            </p>
+            <p class="text-gray-700 mb-8 leading-relaxed font-semibold">
+                Beklediğiniz için teşekkürler.
+            </p>
+            
+            <!-- Tamam Butonu -->
+            <button onclick="closeWaiterCallPopup()" 
+                    class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                Tamam
+            </button>
+        </div>
+    </div>
+    
+    <!-- Eski büyük bildirim (geriye uyumluluk için) -->
+    <div id="message-box" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white px-8 py-5 rounded-2xl shadow-2xl z-50 transition-all duration-500 opacity-0 hidden text-center font-semibold text-lg">
+        <!-- Mesaj içeriği JS tarafından doldurulacak -->
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="hidden text-center text-primary-cafe py-4">
+        Yükleniyor...
+    </div>
+
+    <!-- App.js Modül - Menü yükleme için -->
+    <script type="module" src="./app.js"></script>
+
+    <script>
+        // Menü sayfası için özel yapılandırma
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📋 Menü sayfası yükleniyor...');
+            
+            // Masa numarasını URL'den al ve göster
+            const urlParams = new URLSearchParams(window.location.search);
+            const tableId = urlParams.get('table') || '13';
+            
+            // Masa numarasını header'da göster
+            const tableIdDisplay = document.getElementById('table-id-display');
+            if (tableIdDisplay) {
+                tableIdDisplay.textContent = tableId;
+                console.log('✅ Masa numarası gösterildi:', tableId);
+            }
+            
+            // appState'i menü görünümüne ayarla
+            if (window.appState) {
+                window.appState.currentView = 'menu';
+                window.appState.menuView = 'categories'; // İlk açılışta kategorileri göster
+                window.appState.selectedCategory = null;
+                window.appState.tableId = tableId;
+                console.log('✅ appState güncellendi:', {
+                    currentView: window.appState.currentView,
+                    menuView: window.appState.menuView,
+                    selectedCategory: window.appState.selectedCategory,
+                    tableId: window.appState.tableId
+                });
+            }
+            
+            // app.js yüklendikten sonra menüyü yükle
+            if (window.loadMenu) {
+                console.log('✅ window.loadMenu mevcut, çağrılıyor...');
+                window.loadMenu();
+            } else {
+                // window.loadMenu yüklenene kadar bekle
+                let attempts = 0;
+                const checkLoadMenu = setInterval(() => {
+                    attempts++;
+                    if (window.appState) {
+                        window.appState.currentView = 'menu';
+                        window.appState.menuView = 'categories'; // İlk açılışta kategorileri göster
+                        window.appState.selectedCategory = null;
+                        window.appState.tableId = tableId;
+                    }
+                    if (window.loadMenu && typeof window.loadMenu === 'function') {
+                        clearInterval(checkLoadMenu);
+                        console.log('✅ window.loadMenu yüklendi, çağrılıyor...');
+                        window.loadMenu();
+                    } else if (attempts > 30) {
+                        clearInterval(checkLoadMenu);
+                        console.error('❌ window.loadMenu yüklenemedi!');
+                        alert('Menü yüklenemedi. Lütfen sayfayı yenileyin.');
+                    }
+                }, 300);
+            }
+        });
+    </script>
+
+</body>
+</html>
+

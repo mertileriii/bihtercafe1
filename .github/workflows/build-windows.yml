@@ -1,0 +1,37 @@
+name: Build Windows Executable
+
+on:
+  workflow_dispatch:  # Manuel tetikleme
+  push:
+    tags:
+      - 'v*'  # Tag push edildiğinde otomatik build
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Rebuild native modules
+      run: npm run rebuild
+      
+    - name: Build Windows executable
+      run: npm run build:win
+      
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-exe
+        path: dist/*.exe
+        retention-days: 30
+
