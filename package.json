@@ -114,6 +114,7 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*",
       "node_modules/bcryptjs/**/*"
-    ]
+    ],
+    "publish": null
   }
 }

@@ -12,13 +12,18 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20'
         
+    - name: Create firebase-service-account.json
+      run: |
+        echo "{}" > firebase-service-account.json
+        echo "⚠️ firebase-service-account.json oluşturuldu (boş). Gerçek dosyayı build sonrası eklemeniz gerekecek."
+      
     - name: Install dependencies
       run: npm install
       
@@ -26,6 +31,8 @@ jobs:
       run: npm run rebuild
       
     - name: Build Windows executable
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: npm run build:win
       
     - name: Upload artifacts
