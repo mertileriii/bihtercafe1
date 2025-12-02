@@ -3,8 +3,15 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
-const express = require('express');
-const cors = require('cors');
+// Express ve CORS - opsiyonel (build'de olmayabilir)
+let express = null;
+let cors = null;
+try {
+  express = require('express');
+  cors = require('cors');
+} catch (error) {
+  console.warn('⚠️ Express veya CORS modülleri bulunamadı, API server başlatılmayacak:', error.message);
+}
 const { initializeFirebase, syncMenuItemToFirestore, deleteMenuItemFromFirestore, listenToOrders, saveOrderToSQLite, isFirebaseInitialized, getFirestoreDb } = require('./firestore-sync');
 const { startListeningToOrders: startOrderListener, stopListeningToOrders: stopOrderListener } = require('./orders-listener');
 const { startListeningToWaiterCalls: startWaiterCallsListener, stopListeningToWaiterCalls: stopWaiterCallsListener } = require('./waiter-calls-listener');
@@ -288,6 +295,12 @@ let apiServer = null;
 function startAPIServer() {
   if (apiServer) {
     console.log('⚠️ API server zaten çalışıyor');
+    return;
+  }
+  
+  // Express kontrolü
+  if (!express || !cors) {
+    console.warn('⚠️ Express veya CORS modülleri bulunamadı, API server başlatılamıyor');
     return;
   }
   
@@ -1193,6 +1206,12 @@ app.on('before-quit', () => {
 function startAPIServer() {
   if (apiServer) {
     console.log('⚠️ API server zaten çalışıyor');
+    return;
+  }
+  
+  // Express kontrolü
+  if (!express || !cors) {
+    console.warn('⚠️ Express veya CORS modülleri bulunamadı, API server başlatılamıyor');
     return;
   }
   
