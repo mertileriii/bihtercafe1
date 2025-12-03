@@ -343,14 +343,18 @@ function listenToWaiterCalls(callback) {
       (snapshot) => {
         console.log('🔄 Garson çağrısı snapshot güncellendi');
         console.log('   Document sayısı:', snapshot.size);
+        console.log('   Has pending writes:', snapshot.metadata?.hasPendingWrites);
         
         const waiterCalls = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
+          console.log(`   📄 Doküman ${doc.id}:`, { tableId: data.tableId, status: data.status, createdAt: data.createdAt });
           
           // Sadece pending status'lu çağrıları al
           const callStatus = data.status || 'pending';
+          console.log(`   🔍 Doküman ${doc.id} status kontrolü: "${callStatus}" === "pending"? ${callStatus === 'pending'}`);
           if (callStatus !== 'pending') {
+            console.log(`   ⏭️ Doküman ${doc.id} atlandı (status: "${callStatus}")`);
             return;
           }
           

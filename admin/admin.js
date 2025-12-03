@@ -1533,10 +1533,15 @@ function startListeningToOrders() {
   console.log('   Main process\'ten mesaj bekleniyor...');
   
   // Garson çağrılarını dinle
+  console.log('🔍 Garson çağrısı dinleme kontrolü yapılıyor...');
+  console.log('   window.electronAPI:', window.electronAPI ? '✅ Mevcut' : '❌ Yok');
+  console.log('   window.electronAPI.onNewWaiterCalls:', window.electronAPI?.onNewWaiterCalls ? '✅ Mevcut' : '❌ Yok');
+  
   if (window.electronAPI && window.electronAPI.onNewWaiterCalls) {
     console.log('👂 Garson çağrısı dinleme başlatılıyor...');
     waiterCallsUnsubscribe = window.electronAPI.onNewWaiterCalls((waiterCalls) => {
-      console.log(`🔔 ${waiterCalls.length} yeni garson çağrısı alındı`);
+      console.log(`🔔 ${waiterCalls.length} yeni garson çağrısı alındı (admin.js callback)`);
+      console.log('   Waiter Calls Details:', JSON.stringify(waiterCalls, null, 2));
       
       const previousPendingCount = pendingWaiterCalls.filter(call => call.status === 'pending' || !call.status).length;
       pendingWaiterCalls = waiterCalls;
